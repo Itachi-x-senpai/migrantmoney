@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MigrantMoney - Affordable Remittances</title>
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: #f3f4f6; }
+    #transaction-animation { color: green; font-weight: bold; display: none; }
+  </style>
+</head>
+<body>
+  <div id="root" class="min-h-screen flex items-center justify-center"></div>
+
+  <!-- React + ReactDOM + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- App -->
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function App() {
+      const [loggedIn, setLoggedIn] = useState(false);
+      const [user] = useState({ name: 'Maria, Filipino Nurse' });
+      const [balance, setBalance] = useState(2320);
+      const [rate] = useState({ EUR: 1, PHP: 60, NGN: 1600 }); // Mock conversion rates
+      const [history, setHistory] = useState([
+        { id: 1, to: 'Manila', amount: 300, currency: 'PHP', fee: 4.5, date: '2025-04-20', status: 'done', txId: 'MM123456' },
+        { id: 2, to: 'Lagos', amount: 100, currency: 'NGN', fee: 1.5, date: '2025-04-21', status: 'pending', txId: 'MM789012' },
+      ]);
+      const [creditData, setCreditData] = useState({ remittances: 0, utilities: 0 });
+      const [creditScore, setCreditScore] = useState(null);
+      const [loanStatus, setLoanStatus] = useState('');
+      const [quizAnswer, setQuizAnswer] = useState('');
+      const [quizResult, setQuizResult] = useState('');
+
+      // Login handler
+      const handleLogin = (e) => {
+        e.preventDefault();
+        const u = e.target.username.value;
+        const p = e.target.password.value;
+        if (u === 'maria' && p === 'maria') setLoggedIn(true);
+        else alert('Wrong credentials!');
+      };
+
+      // Send money handler
+      const handleSend = (e) => {
+        e.preventDefault();
+        const to = e.target.recipient.value;
+        const amt = parseFloat(e.target.amount.value);
+        const currency = e.target.currency.value;
+        if (!to || !amt || !currency) return;
+        const fee = amt * 0.015; // 1.5% fee
+        const converted = amt * rate[currency];
+        setBalance(b => b - amt);
+        document.getElementById('transaction-animation').style.display = 'block';
+        setTimeout(() => {
+          document.getElementById('transaction-animation').style.display = 'none';
+          setHistory(h => [
+            { id: Date.now(), to, amount: amt, currency, fee, date: new Date().toISOString().slice(0,10), status: 'pending', txId: `MM${Math.floor(Math.random() * 1000000)}` },
+            ...h
+          ]);
+        }, 2000); // Simulate Stellar blockchain
+        e.target.reset();
+      };
+
+      // Credit score handler
+      const handleCredit = (e) => {
+        e.preventDefault();
+        const remittances = parseFloat(e.target.remittances.value);
+        const utilities = parseFloat(e.target.utilities.value);
+        setCreditData({ remittances, utilities });
+        const score = Math.min(300 + remittances * 0.5 + utilities * 0.3, 850); // Mock AI
+        setCreditScore(score.toFixed(0));
+        setLoanStatus(score > 600 ? 'Eligible for €500 loan' : 'Not eligible yet');
+      };
+
+      // Loan application handler
+      const handleLoan = () => {
+        if (creditScore > 600) alert('Loan application submitted! We’ll contact you soon.');
+        else alert('Improve your credit score to apply for a loan.');
+      };
+
+      // Quiz handler
+      const handleQuiz = (e) => {
+        e.preventDefault();
+        const answer = e.target.answer.value;
+        setQuizAnswer(answer);
+        setQuizResult(answer === 'b' ? 'Correct! Saving 10% builds wealth.' : 'Incorrect. Try saving 10% monthly.');
+      };
+
+      // Chart setup
+      useEffect(() => {
+        const ctx = document.getElementById('fee-chart').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['MigrantMoney', 'Western Union', 'Remitly', 'Wise'],
+            datasets: [{
+              label: 'Fee (%)',
+              data: [1.5, 7, 5, 2],
+              backgroundColor: ['#007bff', '#dc3545', '#ffc107', '#28a745'],
+            }]
+          },
+          options: {
+            scales: { y: { beginAtZero: true, max: 10 } },
+            plugins: { legend: { display: false } }
+          }
+        });
+      }, []);
+
+      if (!loggedIn) {
+        return (
+          <form onSubmit={handleLogin} className="bg-white p-8 rounded shadow-md w-80">
+            <h2 className="text-2xl mb-4 text-center">MigrantMoney Login</h2>
+            <label className="block mb-1">Username</label>
+            <input name="username" defaultValue="maria" className="w-full mb-4 p-2 border rounded" />
+            <label className="block mb-1">Password</label>
+            <input name="password" type="password" defaultValue="maria" className="w-full mb-6 p-2 border rounded" />
+            <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded">Log in</button>
+          </form>
+        );
+      }
+
+      // Dashboard
+      return (
+        <div className="max-w-4xl w-full space-y-6 p-4">
+          <h1 className="text-2xl">Welcome, {user.name} 👋</h1>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white p-4 rounded shadow">
+              <p className="text-sm text-gray-500">Balance</p>
+              <p className="text-3xl">€{balance.toFixed(2)}</p>
+            </div>
+            <div className="bg-white p-4 rounded shadow">
+              <p className="text-sm text-gray-500">Conversion Rates</p>
+              <p className="text-xl">1 EUR = {rate.PHP} PHP, {rate.NGN} NGN</p>
+            </div>
+          </div>
+
+          {/* Send Money */}
+          <form onSubmit={handleSend} className="bg-white p-6 rounded shadow space-y-4">
+            <h2 className="text-xl">Send Money</h2>
+            <input name="recipient" placeholder="Recipient (e.g., Manila)" className="w-full p-2 border rounded" required />
+            <input name="amount" type="number" placeholder="Amount (EUR)" className="w-full p-2 border rounded" required />
+            <select name="currency" className="w-full p-2 border rounded">
+              <option value="PHP">Philippines (PHP)</option>
+              <option value="NGN">Nigeria (NGN)</option>
+            </select>
+            <button type="submit" className="bg-green-600 text-white py-2 rounded w-full">Send</button>
+            <p id="transaction-animation">Processing via Stellar Blockchain...</p>
+            {history.length > 0 && (
+              <p>
+                Latest: €{history[0].amount} to {history[0].to} | Fee: €{history[0].fee.toFixed(2)} | 
+                Save €{(history[0].amount * 0.055).toFixed(2)} vs. Western Union, €{(history[0].amount * 0.035).toFixed(2)} vs. Remitly
+              </p>
+            )}
+          </form>
+
+          {/* Fee Comparison Chart */}
+          <div className="bg-white p-6 rounded shadow">
+            <h2 className="text-xl mb-4">Fee Comparison</h2>
+            <canvas id="fee-chart" height="100"></canvas>
+          </div>
+
+          {/* Credit Score and Loans */}
+          <form onSubmit={handleCredit} className="bg-white p-6 rounded shadow space-y-4">
+            <h2 className="text-xl">Calculate Credit Score</h2>
+            <input name="remittances" type="number" placeholder="Monthly Remittances (€)" className="w-full p-2 border rounded" required />
+            <input name="utilities" type="number" placeholder="Monthly Utilities (€)" className="w-full p-2 border rounded" required />
+            <button type="submit" className="bg-blue-600 text-white py-2 rounded w-full">Calculate</button>
+            {creditScore && (
+              <div>
+                <p>Score: {creditScore}/850 | {loanStatus}</p>
+                <button onClick={handleLoan} className="bg-purple-600 text-white py-2 rounded w-full mt-2">Apply for Loan</button>
+              </div>
+            )}
+          </form>
+
+          {/* Financial Literacy Quiz */}
+          <form onSubmit={handleQuiz} className="bg-white p-6 rounded shadow space-y-4">
+            <h2 className="text-xl">Financial Literacy Quiz</h2>
+            <p>What's the best way to save money?</p>
+            <label><input type="radio" name="answer" value="a" required /> A) Spend all income</label>
+            <label><input type="radio" name="answer" value="b" /> B) Save 10% monthly</label>
+            <label><input type="radio" name="answer" value="c" /> C) Borrow to invest</label>
+            <button type="submit" className="bg-blue-600 text-white py-2 rounded w-full">Submit</button>
+            {quizResult && <p>{quizResult}</p>}
+          </form>
+
+          {/* Transaction History */}
+          <div className="bg-white p-6 rounded shadow">
+            <h2 className="text-xl mb-4">Transaction History</h2>
+            <ul className="space-y-2">
+              {history.map(tx => (
+                <li key={tx.id} className="flex justify-between">
+                  <span>{tx.date} → {tx.to} ({tx.currency})</span>
+                  <span>€{tx.amount} | Fee: €{tx.fee.toFixed(2)} | <em>{tx.status}</em> | TxID: {tx.txId}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
